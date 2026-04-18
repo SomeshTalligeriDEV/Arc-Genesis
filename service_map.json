@@ -1,0 +1,16 @@
+{
+  "orders": {"service": "payments-api", "team": "payments", "criticality": "high", "description": "Core order processing"},
+  "order_items": {"service": "payments-api", "team": "payments", "criticality": "high", "description": "Line items for orders"},
+  "customers": {"service": "auth-service", "team": "identity", "criticality": "high", "description": "Customer accounts and profiles"},
+  "users": {"service": "auth-service", "team": "identity", "criticality": "critical", "description": "User authentication data"},
+  "products": {"service": "catalog-service", "team": "catalog", "criticality": "medium", "description": "Product catalog"},
+  "categories": {"service": "catalog-service", "team": "catalog", "criticality": "low", "description": "Product categories"},
+  "inventory": {"service": "warehouse-api", "team": "logistics", "criticality": "high", "description": "Stock levels and availability"},
+  "payments": {"service": "payments-api", "team": "payments", "criticality": "critical", "description": "Payment transactions"},
+  "transactions": {"service": "payments-api", "team": "payments", "criticality": "critical", "description": "Financial transactions"},
+  "user_transactions": {"service": "payments-api", "team": "payments", "criticality": "critical", "description": "User payment history"},
+  "logs": {"service": "observability", "team": "platform", "criticality": "low", "description": "Application logs"},
+  "sessions": {"service": "auth-service", "team": "identity", "criticality": "medium", "description": "User sessions"},
+  "accounts": {"service": "finance-service", "team": "finance", "criticality": "critical", "description": "Financial accounts"},
+  "balances": {"service": "finance-service", "team": "finance", "criticality": "critical", "description": "Account balances"}
+}

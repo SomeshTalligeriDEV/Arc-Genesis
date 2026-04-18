@@ -1,0 +1,13 @@
+fastapi==0.115.12
+uvicorn[standard]==0.34.2
+httpx==0.28.1
+pydantic==2.11.1
+python-dotenv==1.1.0
+sqlparse==0.5.3
+# Optional: Real warehouse connectors (install what you need)
+# asyncpg            # PostgreSQL
+# aiomysql           # MySQL
+# snowflake-connector-python  # Snowflake
+# google-cloud-bigquery       # BigQuery
+# redis              # Redis Streams
+# groq               # Groq SDK (alt to httpx)

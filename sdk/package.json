@@ -1,0 +1,8 @@
+{
+  "name": "arc-genesis-sdk",
+  "version": "1.0.0",
+  "description": "Arc Genesis — AI PR Reviewer SDK for Data Engineering",
+  "main": "index.js",
+  "keywords": ["sql", "analysis", "data-engineering", "ai", "pr-review"],
+  "license": "MIT"
+}

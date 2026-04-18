@@ -1,0 +1,42 @@
+{
+  "provider": {
+    "anthropic": {
+      "apiKey": "{env:ANTHROPIC_API_KEY}"
+    },
+    "openai": {
+      "apiKey": "{env:OPENAI_API_KEY}"
+    },
+    "google": {
+      "apiKey": "{env:GOOGLE_API_KEY}"
+    }
+  },
+  "model": "anthropic/claude-sonnet-4-6",
+  "small_model": "anthropic/claude-haiku-4-5-20251001",
+  "agent": {
+    "analyst": {
+      "permission": {
+        "write": "deny",
+        "edit": "deny",
+        "bash": {
+          "dbt docs generate": "allow",
+          "dbt ls": "allow",
+          "*": "deny"
+        }
+      }
+    },
+    "builder": {
+      "permission": {
+        "write": "allow",
+        "edit": "allow",
+        "bash": {
+          "dbt *": "allow",
+          "npm *": "allow",
+          "rm -rf *": "deny"
+        }
+      }
+    }
+  },
+  "skills": {
+    "paths": ["./.altimate-code/skill"]
+  }
+}
