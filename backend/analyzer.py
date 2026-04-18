@@ -9,6 +9,7 @@ import json
 import logging
 import re
 import shutil
+import time
 from dataclasses import dataclass, field
 
 import sqlparse
@@ -45,6 +46,7 @@ class AnalysisResult:
     query_type: str = "UNKNOWN"
     complexity_score: int = 1
     source: str = "ast-analyzer"
+    altimate_time_ms: int = 0
     error: str | None = None
 
     def to_dict(self) -> dict:
@@ -54,6 +56,7 @@ class AnalysisResult:
             "query_type": self.query_type,
             "complexity_score": self.complexity_score,
             "tables": self.tables,
+            "altimate_time_ms": self.altimate_time_ms,
             "issues_count": len(self.issues),
             "issues": [i.to_dict() for i in self.issues],
         }
@@ -231,9 +234,11 @@ async def analyze_sql(sql: str) -> AnalysisResult:
     # Try Altimate CLI augmentation
     altimate_output = ""
     source = "ast-analyzer"
+    altimate_time_ms = 0
     altimate_bin = _find_altimate()
 
     if altimate_bin:
+        altimate_start = time.monotonic()
         try:
             proc = await asyncio.create_subprocess_exec(
                 altimate_bin, "check", "--format", "json",
@@ -251,6 +256,8 @@ async def analyze_sql(sql: str) -> AnalysisResult:
                 source = "ast+altimate"
         except (asyncio.TimeoutError, Exception) as e:
             logger.debug("Altimate CLI augmentation skipped: %s", str(e))
+        finally:
+            altimate_time_ms = int((time.monotonic() - altimate_start) * 1000)
 
     # Build structured output
     result_data = {
@@ -273,6 +280,7 @@ async def analyze_sql(sql: str) -> AnalysisResult:
         query_type=query_type,
         complexity_score=complexity,
         source=source,
+        altimate_time_ms=altimate_time_ms,
     )
 
 

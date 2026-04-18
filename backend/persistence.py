@@ -24,6 +24,15 @@ DB_PATH = os.getenv("ARC_DB_PATH", str(Path(__file__).parent / "arc_genesis.db")
 # ─── Schema ──────────────────────────────────────────────
 
 _SCHEMA = """
+CREATE TABLE IF NOT EXISTS reviews (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    query TEXT NOT NULL,
+    decision TEXT NOT NULL,
+    risk_score REAL NOT NULL,
+    risk_level TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS queries (
     id TEXT PRIMARY KEY,
     sql_text TEXT NOT NULL,
@@ -84,6 +93,7 @@ CREATE INDEX IF NOT EXISTS idx_queries_risk ON queries(risk_score DESC);
 CREATE INDEX IF NOT EXISTS idx_queries_injection ON queries(is_injection);
 CREATE INDEX IF NOT EXISTS idx_threats_severity ON threats(severity);
 CREATE INDEX IF NOT EXISTS idx_anomalies_type ON anomalies(anomaly_type);
+CREATE INDEX IF NOT EXISTS idx_reviews_created_at ON reviews(created_at DESC);
 """
 
 
@@ -267,6 +277,61 @@ class Database:
         async with self._lock:
             loop = asyncio.get_event_loop()
             return await loop.run_in_executor(None, _stats)
+
+    # ─── Review History (MVP) ─────────────────────────────
+
+    async def save_review(self, query: str, decision: str, risk_score: float, risk_level: str):
+        """Persist one completed review for lightweight history browsing."""
+        query_preview = query[:200] + ("..." if len(query) > 200 else "")
+
+        def _insert():
+            conn = self._get_conn()
+            conn.execute(
+                """INSERT INTO reviews (query, decision, risk_score, risk_level)
+                VALUES (?, ?, ?, ?)""",
+                (query, decision, risk_score, risk_level),
+            )
+            conn.commit()
+
+        async with self._lock:
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, _insert)
+
+    async def get_recent_reviews(self, limit: int = 50, decision: str = None) -> list[dict]:
+        """Return recent persisted reviews in a shape compatible with existing UI."""
+        def _select():
+            conn = self._get_conn()
+            params = []
+            where = ""
+            if decision:
+                where = "WHERE decision = ?"
+                params.append(decision)
+
+            params.append(min(limit, 200))
+            rows = conn.execute(
+                f"""SELECT id, query, decision, risk_score, risk_level, created_at
+                FROM reviews {where}
+                ORDER BY created_at DESC
+                LIMIT ?""",
+                params,
+            ).fetchall()
+
+            return [
+                {
+                    "id": row["id"],
+                    "sql_text": row["query"],
+                    "sql_preview": row["query"][:200] + ("..." if len(row["query"]) > 200 else ""),
+                    "decision": row["decision"],
+                    "risk_score": row["risk_score"],
+                    "risk_level": row["risk_level"],
+                    "created_at": row["created_at"],
+                }
+                for row in rows
+            ]
+
+        async with self._lock:
+            loop = asyncio.get_event_loop()
+            return await loop.run_in_executor(None, _select)
 
     # ─── Threat Operations ────────────────────────────────
 

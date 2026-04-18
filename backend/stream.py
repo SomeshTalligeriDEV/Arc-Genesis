@@ -16,6 +16,28 @@ logger = logging.getLogger(__name__)
 REDIS_URL = os.getenv("REDIS_URL", "")
 STREAM_KEY = "arc:queries"
 CONSUMER_GROUP = "arc-workers"
+REVIEW_STREAM_STEPS = [
+    "Analyzing query...",
+    "Validating security...",
+    "Checking joins...",
+    "Mapping lineage...",
+    "Estimating cost...",
+    "Calling LLM...",
+    "Generating decision...",
+]
+
+
+def format_sse(payload: dict, event: str | None = None) -> str:
+    """Encode a JSON payload as a Server-Sent Event frame."""
+    lines = []
+    if event:
+        lines.append(f"event: {event}")
+
+    body = json.dumps(payload)
+    for line in body.splitlines():
+        lines.append(f"data: {line}")
+
+    return "\n".join(lines) + "\n\n"
 
 
 @dataclass

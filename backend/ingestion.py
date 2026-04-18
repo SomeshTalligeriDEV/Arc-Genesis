@@ -339,6 +339,38 @@ class IngestionEngine:
         """Public entry point for warehouse poller / external sources."""
         await self._handle_stream_message(msg)
 
+    async def broadcast_result(self, sql: str, source: str, result: dict):
+        """
+        Broadcast a pre-analyzed result directly to the live feed.
+        Used by /stream-review so manual reviews appear in the dashboard
+        without triggering a second analysis pass.
+        """
+        event = QueryEvent(
+            id=result.get("id", str(uuid.uuid4())[:8]),
+            sql=sql.strip(),
+            source=source,
+            timestamp=datetime.utcnow().isoformat() + "Z",
+            status=EventStatus.DONE,
+            result=result,
+        )
+        self.events.appendleft(event)
+        self.stats["total_ingested"] += 1
+        self.stats["total_analyzed"] += 1
+
+        decision = result.get("decision", "")
+        if result.get("status") == "BLOCKED" or decision == "REJECT":
+            self.stats["threats_blocked"] += 1
+        elif decision == "WARNING":
+            self.stats["warnings"] += 1
+        elif decision == "APPROVE":
+            self.stats["approved"] += 1
+        if result.get("is_injection"):
+            self.stats["injections_detected"] += 1
+
+        logger.info("📤 Event published to live feed: %s → %s", event.id, decision or result.get("status"))
+        await self._broadcast({"type": "ingested", "event": event.to_dict()})
+        await self._broadcast({"type": "result",   "event": event.to_dict()})
+
 
 # ─── Demo stream (kept for hackathon) ────────────────────
 

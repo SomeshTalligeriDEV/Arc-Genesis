@@ -115,6 +115,7 @@ class ImpactResult:
     overall_severity: str  # critical | high | medium | low
     alert_message: str  # One-line alert for UI banner
     teams_to_notify: list[str]
+    downstream_dashboards: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -134,6 +135,7 @@ class ImpactResult:
             "overall_severity": self.overall_severity,
             "alert_message": self.alert_message,
             "teams_to_notify": self.teams_to_notify,
+            "downstream_dashboards": self.downstream_dashboards,
         }
 
 
@@ -176,6 +178,7 @@ def analyze_impact(tables: list[str], issues: list[dict], query_type: str = "SEL
     # ── Map tables → services ──
     affected_services: list[ServiceImpact] = []
     seen_services = set()
+    downstream_dashboards: list[str] = []
 
     for table in tables:
         # Handle schema-qualified names (schema.table)
@@ -192,6 +195,9 @@ def analyze_impact(tables: list[str], issues: list[dict], query_type: str = "SEL
                     affected_table=table_name,
                 ))
                 seen_services.add(svc_name)
+            dash = info.get("dashboard")
+            if dash and dash not in downstream_dashboards:
+                downstream_dashboards.append(dash)
 
     # ── Map issues → impact predictions ──
     predictions: list[str] = []
@@ -244,4 +250,5 @@ def analyze_impact(tables: list[str], issues: list[dict], query_type: str = "SEL
         overall_severity=max_severity,
         alert_message=alert_message,
         teams_to_notify=teams,
+        downstream_dashboards=downstream_dashboards,
     )
